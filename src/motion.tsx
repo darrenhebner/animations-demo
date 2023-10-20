@@ -6,57 +6,53 @@ import {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
-import { Easing } from "./easing";
 
-const motionElements = new Set<HTMLElement>();
+const motionItems = new Set<HTMLDivElement>();
 
-function flipAnimation(update) {
-  // FIRST
-  const beforeSnapshots = new Map(
-    Array.from(motionElements).map((motionItem) => [
-      motionItem,
-      motionItem.getBoundingClientRect(),
-    ]),
+function withFlip(update: () => void) {
+  // First
+  const beforeCoords = new Map(
+    Array.from(motionItems).map((item) => [item, item.getBoundingClientRect()]),
   );
 
   update();
 
-  const pendingAnimations = Array.from(motionElements).map((element) => {
-    const beforeCoords = beforeSnapshots.get(element);
-    if (!beforeCoords) return;
+  const pendingAnimations = Array.from(motionItems).map((item) => {
+    const before = beforeCoords.get(item);
+    if (!before) return;
 
-    // LAST
-    const afterCoords = element.getBoundingClientRect();
+    // Last
+    const after = item.getBoundingClientRect();
 
-    // INVERT
-    const verticalDiff = beforeCoords.y - afterCoords.y;
-    const horizontalDiff = beforeCoords.x - afterCoords.x;
+    // Invert
+    const verticalDiff = before.y - after.y;
+    const horizontalDiff = before.x - after.x;
 
     const start = {
       translate: `${horizontalDiff}px ${verticalDiff}px`,
     };
 
     const end = {
-      translate: "0 0",
+      translate: `0 0`,
     };
 
     return () => {
-      // PLAY
-      element.animate([start, end], {
-        duration: 400,
-        easing: Easing.Spring,
+      item.animate([start, end], {
+        duration: 250,
+        easing: "ease-out",
       });
     };
   });
 
+  // Play
   pendingAnimations.forEach((animation) => animation?.());
 }
 
-// todo swap out depending on support
 const withAnimation =
   "startViewTransition" in document
-    ? (callback) => document.startViewTransition(callback)
-    : flipAnimation;
+    ? // @ts-expect-error
+      (update: () => void) => document.startViewTransition(update)
+    : withFlip;
 
 export function useAnimatedState<State>(initial: State) {
   const [state, setState] = useState(initial);
@@ -80,20 +76,22 @@ export function MotionItem({
 
   useEffect(() => {
     if (!ref.current) return;
-    motionElements.add(ref.current);
 
+    motionItems.add(ref.current);
     return () => {
       if (ref.current) {
-        motionElements.delete(ref.current);
+        motionItems.delete(ref.current);
       }
     };
   }, []);
 
-  const safeId = id.replace(/[^a-zA-Z]/g, "");
-
   return (
-    <div ref={ref} style={{ viewTransitionName: safeId }}>
+    <div ref={ref} style={{ viewTransitionName: safeId(id) }}>
       {children}
     </div>
   );
+}
+
+function safeId(id: string) {
+  return id.replace(/[^a-zA-Z]/g, "");
 }

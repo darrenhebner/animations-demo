@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import "./App.css";
 import { useAnimatedState, MotionItem } from "./motion";
 
 function App() {
@@ -17,18 +16,41 @@ function App() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          addTodo(event.target.elements.todo.value);
-          event.target.reset();
+          const form = event.target as HTMLFormElement & {
+            elements: { todo: HTMLInputElement };
+          };
+
+          addTodo(form.elements.todo.value);
+          form.reset();
         }}
       >
-        <input type="text" name="todo" autoComplete="off"/>
+        <input
+          type="text"
+          name="todo"
+          autoComplete="off"
+          placeholder="New todo…"
+        />
+
         <button className="NewButton" type="submit">
-          New Todo
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            style={{ width: 12, height: 12 }}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4.5v15m7.5-7.5h-15"
+            />
+          </svg>
         </button>
       </form>
       <ul>
         {todos.map((todo) => (
-          <MotionItem id={todo} key={todo}>
+          <MotionItem key={todo} id={todo}>
             <Todo
               content={todo}
               onDone={() => {
@@ -93,6 +115,24 @@ function Todo({ content, onDone }: { content: string; onDone(): void }) {
               />
             </svg>
             Snooze
+          </button>
+
+          <button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-6 h-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+              />
+            </svg>
+            Archive
           </button>
         </div>
       )}

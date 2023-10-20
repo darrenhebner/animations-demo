@@ -23,16 +23,27 @@ main {
   margin: 64px auto;
 }
 
+form {
+  display: flex;
+  margin-bottom: 24px;
+}
+
 .NewButton {
-  display: block;
-  width: 100%;
-  margin-bottom: 32px;
   font-size: inherit;
   background-color: #3181f0;
   color: white;
   border: none;
   border-radius: 8px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   padding: 8px 12px;
+}
+
+input[type="text"] {
+  border: 0;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  padding: 8px;
 }
 
 .ContentButton {
@@ -41,6 +52,7 @@ main {
   color: inherit;
   flex-grow: 1;
   text-align: left;
+  cursor: pointer;
 }
 
 .ContentRow {
@@ -56,6 +68,8 @@ li {
 }
 
 .Controls {
+  display: flex;
+  gap: 4px;
   margin: 8px 0 0 24px;
 }
 
@@ -70,7 +84,7 @@ li {
   gap: 2px;
   background: transparent;
   border: none;
-  color: inherit;
+  color: rgba(255, 255, 255, 0.5);
   font-size: 10px;
 }
 
