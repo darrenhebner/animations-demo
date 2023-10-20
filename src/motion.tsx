@@ -1,89 +1,99 @@
-import { PropsWithChildren, useCallback, useEffect, useRef, useState } from "react";
+import {
+  PropsWithChildren,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { flushSync } from "react-dom";
-import {Easing} from './easing'
+import { Easing } from "./easing";
+
+const motionElements = new Set<HTMLElement>();
+
+function flipAnimation(update) {
+  // FIRST
+  const beforeSnapshots = new Map(
+    Array.from(motionElements).map((motionItem) => [
+      motionItem,
+      motionItem.getBoundingClientRect(),
+    ]),
+  );
+
+  update();
+
+  const pendingAnimations = Array.from(motionElements).map((element) => {
+    const beforeCoords = beforeSnapshots.get(element);
+    if (!beforeCoords) return;
+
+    // LAST
+    const afterCoords = element.getBoundingClientRect();
+
+    // INVERT
+    const verticalDiff = beforeCoords.y - afterCoords.y;
+    const horizontalDiff = beforeCoords.x - afterCoords.x;
+
+    const start = {
+      translate: `${horizontalDiff}px ${verticalDiff}px`,
+    };
+
+    const end = {
+      translate: "0 0",
+    };
+
+    return () => {
+      // PLAY
+      element.animate([start, end], {
+        duration: 400,
+        easing: Easing.Spring,
+      });
+    };
+  });
+
+  pendingAnimations.forEach((animation) => animation?.());
+}
+
+// todo swap out depending on support
+const withAnimation =
+  "startViewTransition" in document
+    ? (callback) => document.startViewTransition(callback)
+    : flipAnimation;
 
 export function useAnimatedState<State>(initial: State) {
-  const withAnimation = useAnimation();
   const [state, setState] = useState(initial);
 
-  const handleUpdate = useCallback((update) => {
+  const handleUpdate: typeof setState = useCallback((update) => {
     withAnimation(() => {
-      setState(update)
-    })
-  }, [])
-
-  return [state, handleUpdate] as const
-}
-
-interface MotionConfig {
-  before(): DOMRect;
-  after(beforeCoords: DOMRect): undefined | (() => void);
-}
-
-const motionItems = new Set<MotionConfig>();
-
-export function useAnimation() {
-  return useCallback((update: (...args: any[]) => any) => {
-    const beforeSnapshots = new Map(
-      Array.from(motionItems).map((motionItem) => [
-        motionItem,
-        motionItem.before(),
-      ]),
-    );
-    
-    flushSync(update);
-
-    const pendingAnimations = Array.from(motionItems).map(motionItem => {
-      const before = beforeSnapshots.get(motionItem);
-      if (!before) return;
-      return motionItem.after(before);
-    })
-
-    pendingAnimations.forEach(animation => animation?.());
+      flushSync(() => {
+        setState(update);
+      });
+    });
   }, []);
+
+  return [state, handleUpdate] as const;
 }
 
-export function MotionItem({ children }: PropsWithChildren<{}>) {
+export function MotionItem({
+  id,
+  children,
+}: PropsWithChildren<{ id: string }>) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!ref.current) return;
+    motionElements.add(ref.current);
 
-    const performer: MotionConfig = {
-      before() {
-        return ref.current!.getBoundingClientRect();
-      },
-      after(beforeCoords) {
-        if (!ref.current) return;
-
-        const afterCoords = ref.current?.getBoundingClientRect();
-
-        const verticalDiff = beforeCoords.y - afterCoords.y;
-        const horizontalDiff = beforeCoords.x - afterCoords.x;
-        console.log(verticalDiff, horizontalDiff)
-        const start = {
-          translate: `${horizontalDiff}px ${verticalDiff}px`
-        }
-
-        const end = {
-          translate: "0 0"
-        }
-
-
-        return () => {
-          ref.current?.animate([start, end], {
-            duration: 400,
-            easing: Easing.SpringSoft
-          })
-        }
-      }
-    }
-    
-    motionItems.add(performer);
     return () => {
-      motionItems.delete(performer)
-    }
-  }, [])
+      if (ref.current) {
+        motionElements.delete(ref.current);
+      }
+    };
+  }, []);
 
-  return <div ref={ref}>{children}</div>;
+  const safeId = id.replace(/[^a-zA-Z]/g, "");
+
+  return (
+    <div ref={ref} style={{ viewTransitionName: safeId }}>
+      {children}
+    </div>
+  );
 }

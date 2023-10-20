@@ -21,14 +21,14 @@ function App() {
           event.target.reset();
         }}
       >
-        <input type="text" name="todo" />
+        <input type="text" name="todo" autoComplete="off"/>
         <button className="NewButton" type="submit">
           New Todo
         </button>
       </form>
       <ul>
-        {todos.map((todo, index) => (
-          <MotionItem key={todo}>
+        {todos.map((todo) => (
+          <MotionItem id={todo} key={todo}>
             <Todo
               content={todo}
               onDone={() => {
@@ -42,13 +42,7 @@ function App() {
   );
 }
 
-function Todo({
-  content,
-  onDone,
-}: {
-  content: string;
-  onDone(): void;
-}) {
+function Todo({ content, onDone }: { content: string; onDone(): void }) {
   const [deleting, setDeleting] = useState(false);
   const [active, setActive] = useAnimatedState(false);
 
@@ -73,9 +67,12 @@ function Todo({
             setDeleting(event.currentTarget.checked);
           }}
         />
-        <button className="ContentButton" onClick={() => {
-          setActive(!active)
-        }}>
+        <button
+          className="ContentButton"
+          onClick={() => {
+            setActive(!active);
+          }}
+        >
           {content}
         </button>
       </div>
